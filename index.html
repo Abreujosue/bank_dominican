@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bank Dominican - Simulador</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary:#0b5ed7;
+      --muted:#6c757d;
+      --card-bg:#ffffff;
+      --surface:#f7f9fc;
+    }
+    body{ background:var(--surface); font-family: Inter, system-ui, Arial; }
+    .card { border:0; border-radius:12px; background:var(--card-bg); box-shadow: 0 6px 20px rgba(20,30,60,0.06); }
+    .small-muted{ color:var(--muted); font-size:.85rem; }
+    .balance{ font-weight:700; }
+    .tag{ font-size:.75rem; padding:.2rem .5rem; border-radius:.35rem; background:#eef2ff; color:var(--primary); }
+    .comprobante{ background:#fff; padding:1rem; border-radius:.5rem; border:1px dashed #e6eefc; white-space:pre-wrap; }
+    .app-header { display:flex; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .brand { display:flex; gap:.75rem; align-items:center; }
+    .brand .logo { width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,#0b5ed7,#6ea8fe); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; }
+    .muted-block { color:var(--muted); font-size:.9rem; }
+    /* Landing */
+    #landing_page{
+      min-height:100vh;
+      background: linear-gradient(135deg, #0b5ed7, #6ea8fe);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:#fff; text-align:center; padding:24px;
+    }
+    #landing_page .logo-big{
+      width:92px; height:92px; border-radius:20px; background:rgba(255,255,255,.16);
+      display:flex; align-items:center; justify-content:center; font-weight:800; font-size:2rem;
+      box-shadow:0 6px 24px rgba(0,0,0,.18); margin-bottom:16px; animation:float 3s ease-in-out infinite;
+    }
+    #landing_page h1{ font-weight:800; margin:8px 0 6px; }
+    #landing_page p{ opacity:.95; margin-bottom:24px; }
+    @keyframes float { 0%{transform:translateY(0)} 50%{transform:translateY(-8px)} 100%{transform:translateY(0)} }
+
+    /* Responsive */
+    @media (max-width: 768px){
+      .app-header { flex-direction:column; align-items:flex-start; gap:.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============ LANDING ============ -->
+<div id="landing_page">
+  <div class="logo-big">BD</div>
+  <h1>Bank Dominican</h1>
+  <p>Paga tu tarjeta de crédito en USD desde tu cuenta DOP sin ir al banco.</p>
+  <div class="d-flex flex-column gap-2" style="width:100%; max-width:260px;">
+    <button id="btn_go_login" class="btn btn-light text-primary fw-bold">Iniciar Sesión</button>
+    <button id="btn_go_register" class="btn btn-outline-light">Registrarse</button>
+  </div>
+</div>
+
+<!-- ============ LOGIN / REGISTER ============ -->
+<div id="auth_container" class="container py-5" style="max-width:980px; display:none;">
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card p-4">
+        <h4 class="mb-3">Iniciar Sesión</h4>
+        <div id="login_alert"></div>
+        <div class="mb-3">
+          <label class="form-label">Usuario</label>
+          <input id="login_user" class="form-control" placeholder="usuario">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <input id="login_pass" type="password" class="form-control" placeholder="contraseña">
+        </div>
+        <div class="d-flex gap-2">
+          <button id="btn_login" class="btn btn-primary w-100">Entrar</button>
+          <button id="btn_fill_demo" class="btn btn-outline-secondary">Demo</button>
+        </div>
+        <div class="small-muted mt-3">Usuario por defecto: <strong>admin</strong> / Contraseña: <strong>1234</strong></div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card p-4">
+        <h4 class="mb-3">Registrar nuevo usuario</h4>
+        <div id="reg_alert"></div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label">Usuario</label>
+            <input id="reg_user" class="form-control" placeholder="usuario nuevo">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Correo</label>
+            <input id="reg_email" class="form-control" placeholder="email@ejemplo.com">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contraseña</label>
+            <input id="reg_pass" type="password" class="form-control" placeholder="contraseña">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirmar contraseña</label>
+            <input id="reg_pass2" type="password" class="form-control" placeholder="repita contraseña">
+          </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <button id="btn_register" class="btn btn-success">Registrar</button>
+          <button id="btn_clear_users" class="btn btn-outline-danger">Limpiar usuarios (local)</button>
+        </div>
+        <div class="mt-3 muted-block">Los usuarios registrados quedan guardados en tu navegador (localStorage). Esto es una simulación — para producción usar backend seguro.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP MAIN ============ -->
+<div id="app" style="display:none;">
+  <div class="container py-4">
+    <div class="app-header">
+      <div class="brand">
+        <div class="logo">BD</div>
+        <div>
+          <div style="font-weight:700; font-size:1.1rem;">Bank Dominican — Simulador</div>
+          <div class="small-muted">Pago de tarjetas USD desde cuentas DOP</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:.75rem; align-items:center;">
+        <div class="small-muted" id="logged_user">Hola, Usuario</div>
+        <button id="btn_logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- LEFT: Rate & Payment -->
+      <div class="col-lg-6">
+        <div class="card p-3 mb-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="mb-0">Tasa de Cambio (DOP → USD)</h5>
+              <div class="small-muted">Fuente: Simulada</div>
+            </div>
+            <div class="text-end">
+              <div id="tasa_display" style="font-size:1.2rem; font-weight:700;">1 USD = 55.00 DOP</div>
+              <div class="small-muted">Última actualización: <span id="tasa_ts">-</span></div>
+            </div>
+          </div>
+
+          <hr/>
+
+          <div class="row g-2">
+            <div class="col-7">
+              <label class="form-label">Monto a pagar (USD)</label>
+              <input id="monto_usd" class="form-control" type="number" min="0" step="0.01" value="100.00">
+            </div>
+            <div class="col-5">
+              <label class="form-label">Comisión (%)</label>
+              <input id="comision_pct" class="form-control" type="number" min="0" step="0.01" value="0.50">
+            </div>
+
+            <div class="col-12 mt-2">
+              <label class="form-label">Cuenta Origen (DOP)</label>
+              <select id="select_cuenta" class="form-select"></select>
+              <div class="small-muted mt-1">Saldo: <span id="saldo_cuenta" class="balance">0.00 DOP</span></div>
+            </div>
+
+            <div class="col-12 mt-2">
+              <label class="form-label">Tarjeta destino (USD)</label>
+              <select id="select_tarjeta" class="form-select"></select>
+            </div>
+
+            <div class="col-12 mt-3 d-flex gap-2">
+              <button id="btn_calcular" class="btn btn-primary">Calcular</button>
+              <button id="btn_pagar" class="btn btn-success">Simular Pago</button>
+              <button id="btn_guardar_prog" class="btn btn-outline-secondary">Programar Pago</button>
+            </div>
+
+            <div class="col-12 mt-3">
+              <div class="card p-2">
+                <div><strong>Resumen</strong></div>
+                <div class="mt-1">Monto USD: <span id="res_usd">-</span></div>
+                <div>Monto DOP (sin comisión): <span id="res_dop">-</span></div>
+                <div>Comisión (DOP): <span id="res_comision">-</span></div>
+                <div class="mt-1"><strong>Total a debitar (DOP): <span id="res_total" style="font-weight:700">-</span></strong></div>
+              </div>
+            </div>
+
+            <div class="col-12 mt-3">
+              <div id="alert_placeholder"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin small -->
+        <div class="card p-3">
+          <h6>Administración (simulada)</h6>
+          <div class="row g-2">
+            <div class="col-md-7">
+              <label class="form-label">Tasa (DOP por 1 USD)</label>
+              <input id="input_tasa_manual" class="form-control" type="number" step="0.01" value="55.00">
+            </div>
+            <div class="col-md-5 d-flex align-items-end gap-2">
+              <button id="btn_set_tasa" class="btn btn-outline-primary w-100">Actualizar tasa</button>
+            </div>
+
+            <div class="col-6">
+              <label class="form-label">Simular subida</label>
+              <button id="btn_sim_subida" class="btn btn-sm btn-warning w-100">+ Subir 2%</button>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Simular baja</label>
+              <button id="btn_sim_baja" class="btn btn-sm btn-info w-100">- Bajar 2%</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: History & Programmed & Notifs -->
+      <div class="col-lg-6">
+        <div class="card p-3 mb-3">
+          <h6>Historial de Pagos</h6>
+          <div id="historial_list" style="max-height:260px; overflow:auto;"></div>
+        </div>
+
+        <div class="card p-3 mb-3">
+          <h6>Pagos Programados</h6>
+          <div id="programados_list"></div>
+        </div>
+
+        <div class="card p-3 mb-3">
+          <h6>Notificaciones</h6>
+          <div id="notifs_list"></div>
+        </div>
+
+        <div class="card p-3">
+          <h6>Comprobante (último pago)</h6>
+          <pre id="comprobante" class="comprobante">Sin operaciones aún.</pre>
+          <div class="d-flex gap-2 mt-2">
+            <button id="btn_descargar" class="btn btn-outline-primary">Descargar comprobante</button>
+            <button id="btn_limpiar" class="btn btn-outline-danger">Limpiar historial (local)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script>
+/* -------------------------------
+   STORAGE KEYS & ESTADO INICIAL
+   ------------------------------- */
+const KEY_USERS = 'sim_usuarios_v1';
+const KEY_SESSION = 'sim_session_user';
+const KEY_STATE = 'sim_state_v1';
+
+// Pre-defined admin user
+function ensureDefaultUsers(){
+  const raw = localStorage.getItem(KEY_USERS);
+  if(!raw){
+    const admin = { username:'admin', email:'admin@local', password:'1234' }; // simulación
+    localStorage.setItem(KEY_USERS, JSON.stringify([admin]));
+  }else{
+    try { JSON.parse(raw); } catch(e){ localStorage.setItem(KEY_USERS, JSON.stringify([{ username:'admin', email:'admin@local', password:'1234' }])); }
+  }
+}
+
+// Default state
+function defaultState(){
+  return {
+    tasa: 55.00,
+    tasa_ts: new Date().toLocaleString(),
+    comision_default_pct: 0.5,
+    usuario: { id: 1, nombre: 'Usuario Demo' },
+    cuentas: [
+      { id: 1, numero: '001-000-123456', moneda: 'DOP', saldo: 50000.00, banco: 'Bank Dominican' },
+      { id: 2, numero: '002-000-987654', moneda: 'DOP', saldo: 1500.00, banco: 'Bank Dominican' }
+    ],
+    tarjetas: [
+      { id: 1, numero_mask: '**** **** **** 3456', moneda: 'USD', marca: 'Visa' },
+      { id: 2, numero_mask: '**** **** **** 7890', moneda: 'USD', marca: 'Mastercard' }
+    ],
+    historial: [],
+    pagos: [],
+    programados: [],
+    notifs: []
+  };
+}
+
+let state = loadState() || defaultState();
+
+// ---------- AUTH (register / login / session) ----------
+ensureDefaultUsers();
+
+function loadUsers(){
+  try{ return JSON.parse(localStorage.getItem(KEY_USERS) || '[]'); } catch(e){ return []; }
+}
+function saveUsers(list){ localStorage.setItem(KEY_USERS, JSON.stringify(list)); }
+
+function registerUser(){
+  const user = document.getElementById('reg_user').value.trim();
+  const email = document.getElementById('reg_email').value.trim();
+  const pass = document.getElementById('reg_pass').value;
+  const pass2 = document.getElementById('reg_pass2').value;
+  const alertBox = document.getElementById('reg_alert'); alertBox.innerHTML = '';
+  if(!user || !email || !pass){ alertBox.innerHTML = '<div class="alert alert-warning">Completa todos los campos.</div>'; return; }
+  if(pass !== pass2){ alertBox.innerHTML = '<div class="alert alert-warning">Las contraseñas no coinciden.</div>'; return; }
+  const users = loadUsers();
+  if(users.some(u=>u.username.toLowerCase()===user.toLowerCase())){ alertBox.innerHTML = '<div class="alert alert-danger">Usuario ya existe.</div>'; return; }
+  users.push({ username:user, email, password:pass });
+  saveUsers(users);
+  alertBox.innerHTML = '<div class="alert alert-success">Usuario registrado. Ya puedes iniciar sesión.</div>';
+  document.getElementById('reg_user').value=''; document.getElementById('reg_email').value=''; document.getElementById('reg_pass').value=''; document.getElementById('reg_pass2').value='';
+}
+
+function attemptLogin(){
+  const u = document.getElementById('login_user').value.trim();
+  const p = document.getElementById('login_pass').value;
+  const alertBox = document.getElementById('login_alert'); alertBox.innerHTML = '';
+  if(!u || !p){ alertBox.innerHTML = '<div class="alert alert-warning">Completa usuario y contraseña.</div>'; return; }
+  const users = loadUsers();
+  const found = users.find(x=> x.username === u && x.password === p);
+  if(found){
+    localStorage.setItem(KEY_SESSION, JSON.stringify({ username: found.username, email: found.email }));
+    showApp();
+  } else {
+    alertBox.innerHTML = '<div class="alert alert-danger">Credenciales incorrectas.</div>';
+  }
+}
+
+function fillDemoLogin(){ document.getElementById('login_user').value='admin'; document.getElementById('login_pass').value='1234'; }
+function logout(){ localStorage.removeItem(KEY_SESSION); hideApp(); }
+
+// ---------- STATE (localStorage) ----------
+function loadState(){
+  try{
+    const raw = localStorage.getItem(KEY_STATE);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function saveState(){ localStorage.setItem(KEY_STATE, JSON.stringify(state)); }
+function resetState(){ state = defaultState(); saveState(); }
+
+// ---------- UI helpers & rendering ----------
+function $(id){ return document.getElementById(id); }
+function money(n){ return Number(n).toLocaleString('es-DO', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+
+function updateTasaUI(){
+  $('tasa_display').textContent = `1 USD = ${state.tasa.toFixed(2)} DOP`;
+  $('tasa_ts').textContent = state.tasa_ts;
+  $('input_tasa_manual').value = state.tasa.toFixed(2);
+  $('comision_pct').value = state.comision_default_pct.toFixed(2);
+}
+
+function renderAccounts(){
+  const sel = $('select_cuenta'); sel.innerHTML = '';
+  state.cuentas.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = `${c.numero} — ${c.banco} — Saldo: ${money(c.saldo)} DOP`;
+    sel.appendChild(opt);
+  });
+  updateSaldoDisplay();
+}
+function renderCards(){
+  const sel = $('select_tarjeta'); sel.innerHTML='';
+  state.tarjetas.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = `${t.numero_mask} — ${t.marca} — ${t.moneda}`;
+    sel.appendChild(opt);
+  });
+}
+function renderHistorial(){
+  const cont = $('historial_list'); cont.innerHTML='';
+  const list = [...state.pagos].reverse();
+  if(list.length===0){ cont.innerHTML='<div class="small-muted">No hay pagos registrados.</div>'; return; }
+  list.forEach(p=>{
+    const el = document.createElement('div'); el.className='border-bottom py-2';
+    el.innerHTML = `<div class="d-flex justify-content-between align-items-start">
+      <div><strong>Pago #${p.id}</strong> — ${p.monto_usd.toFixed(2)} USD <div class="small-muted">Tarjeta: ${p.tarjeta_mask} · Cuenta: ${p.cuenta_num}</div></div>
+      <div class="text-end"><div><span class="tag">${p.estado}</span></div><div class="small-muted mt-1">${p.fecha}</div></div>
+    </div>`;
+    cont.appendChild(el);
+  });
+}
+function renderProgramados(){
+  const cont = $('programados_list'); cont.innerHTML='';
+  if(state.programados.length===0){ cont.innerHTML='<div class="small-muted">No hay pagos programados.</div>'; return; }
+  state.programados.forEach(pr=>{
+    const d = document.createElement('div'); d.className='border-bottom py-2';
+    d.innerHTML = `<div><strong>Prog #${pr.id}</strong> · ${pr.monto_usd.toFixed(2)} USD · ${pr.periodicidad} · ${pr.fecha_ejecucion}</div>`;
+    cont.appendChild(d);
+  });
+}
+function renderNotifs(){
+  const cont = $('notifs_list'); cont.innerHTML='';
+  if(state.notifs.length===0){ cont.innerHTML='<div class="small-muted">Sin notificaciones.</div>'; return; }
+  state.notifs.slice().reverse().forEach(n=>{
+    const d = document.createElement('div'); d.className='border-bottom py-2';
+    d.innerHTML = `<div><strong>${n.titulo}</strong><div class="small-muted">${n.mensaje}</div><div class="small-muted">${n.fecha}</div></div>`;
+    cont.appendChild(d);
+  });
+}
+function updateSaldoDisplay(){
+  const sel = $('select_cuenta'); const id = Number(sel.value);
+  const c = state.cuentas.find(x=>x.id===id);
+  $('saldo_cuenta').textContent = c ? `${money(c.saldo)} DOP` : '0.00 DOP';
+}
+
+// ---------- Conversion & Payments ----------
+function calcularConversion(){
+  const usd = parseFloat($('monto_usd').value) || 0;
+  const tasa = Number(state.tasa);
+  const dop = +(usd * tasa);
+  const pct = +(parseFloat($('comision_pct').value) || state.comision_default_pct);
+  const comision_dop = +(dop * (pct/100));
+  const total = +(dop + comision_dop);
+  $('res_usd').textContent = `${usd.toFixed(2)} USD`;
+  $('res_dop').textContent = `${money(dop)} DOP`;
+  $('res_comision').textContent = `${money(comision_dop)} DOP (${pct.toFixed(2)}%)`;
+  $('res_total').textContent = `${money(total)} DOP`;
+  return { usd, dop, comision_dop, total, pct };
+}
+
+function pushNotif(titulo, mensaje){
+  const n = { id: Date.now(), titulo, mensaje, fecha: new Date().toLocaleString() };
+  state.notifs.push(n); saveState(); renderNotifs();
+}
+
+function simularPago(){
+  const calc = calcularConversion();
+  const cuentaId = Number($('select_cuenta').value);
+  const tarjetaId = Number($('select_tarjeta').value);
+  const cuenta = state.cuentas.find(c=>c.id===cuentaId);
+  const tarjeta = state.tarjetas.find(t=>t.id===tarjetaId);
+  if(!cuenta || !tarjeta){ showAlert('Selecciona cuenta y tarjeta.', 'warning'); return; }
+
+  if(cuenta.saldo + 0.0001 < calc.total){
+    showAlert('Saldo insuficiente.', 'danger');
+    const pagoFail = {
+      id: state.pagos.length + 1,
+      monto_usd: calc.usd, monto_dop: calc.dop, comision_dop: calc.comision_dop,
+      total_debitado: calc.total, fecha: new Date().toLocaleString(), estado: 'FALLIDO',
+      cuenta_num: cuenta.numero, tarjeta_mask: tarjeta.numero_mask, referencia: 'N/A'
+    };
+    state.pagos.push(pagoFail);
+    state.historial.push({ id:Date.now(), tipo:'Pago FALLIDO', fecha:pagoFail.fecha, detalle:`Pago ${pagoFail.id} fallido`});
+    pushNotif('Pago fallido', `Pago de ${calc.usd.toFixed(2)} USD falló por saldo insuficiente.`);
+    saveState(); renderHistorial();
+    return;
+  }
+
+  cuenta.saldo = +( (cuenta.saldo - calc.total).toFixed(2) );
+  const referencia = 'REF' + Math.floor(Math.random()*900000 + 100000);
+  const pago = {
+    id: state.pagos.length + 1,
+    monto_usd: calc.usd, monto_dop: calc.dop, comision_dop: calc.comision_dop,
+    total_debitado: calc.total, fecha: new Date().toLocaleString(), estado: 'PROCESADO',
+    cuenta_num: cuenta.numero, tarjeta_mask: tarjeta.numero_mask, referencia
+  };
+  state.pagos.push(pago);
+  state.historial.push({ id:Date.now(), tipo:'Pago', fecha:pago.fecha, detalle:`Pago ${pago.id} procesado. Ref ${referencia}`});
+  pushNotif('Pago procesado', `Pago #${pago.id} procesado por ${money(pago.total_debitado)} DOP.`);
+  generateComprobante(pago); saveState(); renderAccounts(); renderHistorial();
+  showAlert(`Pago procesado. Ref ${referencia}`, 'success');
+}
+
+function generateComprobante(pago){
+  const txt = `COMPROBANTE DE PAGO
+-------------------
+ID Pago: ${pago.id}
+Referencia: ${pago.referencia}
+Fecha: ${pago.fecha}
+
+Tarjeta destino: ${pago.tarjeta_mask}
+Cuenta origen: ${pago.cuenta_num}
+
+Monto (USD): ${pago.monto_usd.toFixed(2)}
+Monto (DOP): ${money(pago.monto_dop)} DOP
+Comisión: ${money(pago.comision_dop)} DOP
+Total debitado: ${money(pago.total_debitado)} DOP
+
+Estado: ${pago.estado}
+`;
+  $('comprobante').textContent = txt;
+}
+
+function programarPago(){
+  const calc = calcularConversion();
+  const fecha = new Date(); fecha.setDate(fecha.getDate() + 3);
+  const pr = {
+    id: state.programados.length + 1,
+    id_usuario: state.usuario.id,
+    monto_usd: calc.usd,
+    fecha_ejecucion: fecha.toLocaleDateString(),
+    periodicidad: 'Único',
+    estado: 'Programado',
+    tarjeta_mask: state.tarjetas[0].numero_mask
+  };
+  state.programados.push(pr);
+  state.historial.push({ id:Date.now(), tipo:'Programado', fecha:new Date().toLocaleString(), detalle:`Pago programado ${pr.id}`});
+  pushNotif('Pago programado', `Pago #${pr.id} programado para ${pr.fecha_ejecucion}`);
+  saveState(); renderProgramados();
+  showAlert('Pago programado (simulado).', 'info');
+}
+
+// ---------- UI helpers ----------
+function showAlert(msg, type='info', timeout=3500){
+  const box = $('alert_placeholder');
+  const id = 'a' + Date.now();
+  const html = `<div id="${id}" class="alert alert-${type} alert-dismissible fade show" role="alert">${msg}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+  </div>`;
+  box.insertAdjacentHTML('beforeend', html);
+  setTimeout(()=>{ const el = document.getElementById(id); if(el) el.classList.remove('show'); }, timeout);
+}
+
+// ---------- Admin actions ----------
+function setTasa(){
+  const v = parseFloat($('input_tasa_manual').value) || state.tasa;
+  state.tasa = +(v.toFixed(2)); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI();
+  showAlert('Tasa actualizada manualmente.', 'success');
+}
+function simSubida(){ state.tasa = +( (state.tasa * 1.02).toFixed(2) ); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI(); showAlert('Tasa subida 2%.', 'info'); }
+function simBaja(){ state.tasa = +( (state.tasa * 0.98).toFixed(2) ); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI(); showAlert('Tasa bajada 2%.', 'info'); }
+
+// ---------- Download & clear ----------
+function downloadComprobante(){
+  const text = $('comprobante').textContent;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'comprobante_pago.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function clearStorageConfirm(){
+  if(confirm('Limpiar historial y datos locales (no usuarios)?')){
+    state.pagos = []; state.historial = []; state.programados = []; state.notifs = [];
+    saveState(); renderHistorial(); renderProgramados(); renderNotifs(); $('comprobante').textContent='Sin operaciones aún.';
+  }
+}
+
+// ---------- Show / hide (control de vistas) ----------
+function showLanding(){
+  $('landing_page').style.display='flex';
+  $('auth_container').style.display='none';
+  $('app').style.display='none';
+}
+function showAuth(){
+  $('landing_page').style.display='none';
+  $('auth_container').style.display='block';
+  $('app').style.display='none';
+}
+function showApp(){
+  const session = JSON.parse(localStorage.getItem(KEY_SESSION) || 'null');
+  if(session){
+    $('landing_page').style.display='none';
+    $('auth_container').style.display='none';
+    $('app').style.display='block';
+    $('logged_user').textContent = `Hola, ${session.username}`;
+    // init UI
+    updateTasaUI(); renderAccounts(); renderCards(); renderHistorial(); renderProgramados(); renderNotifs();
+  } else {
+    hideApp();
+  }
+}
+function hideApp(){ showLanding(); }
+
+// ---------- Initialization & events ----------
+window.addEventListener('load', ()=>{
+  // Cargar estado si existe
+  const saved = loadState();
+  if(saved) state = saved;
+
+  ensureDefaultUsers();
+
+  // Siempre iniciar en la landing (aunque haya sesión guardada)
+  showLanding();
+
+  // Botones landing
+  $('btn_go_login').addEventListener('click', ()=>{
+    const session = JSON.parse(localStorage.getItem(KEY_SESSION) || 'null');
+    if(session){ showApp(); } else { showAuth(); }
+  });
+  $('btn_go_register').addEventListener('click', ()=>{
+    showAuth();
+    $('reg_user').focus();
+  });
+
+  // Auth events
+  $('btn_login').addEventListener('click', attemptLogin);
+  $('btn_fill_demo').addEventListener('click', fillDemoLogin);
+  $('btn_register').addEventListener('click', registerUser);
+  $('btn_clear_users').addEventListener('click', ()=>{
+    if(confirm('Eliminar todos los usuarios registrados (localStorage)?')){
+      localStorage.removeItem(KEY_USERS); ensureDefaultUsers(); alert('Usuarios reiniciados.');
+    }
+  });
+  $('btn_logout').addEventListener('click', ()=>{ logout(); });
+
+  // Payment events
+  $('btn_calcular').addEventListener('click', calcularConversion);
+  $('select_cuenta').addEventListener('change', updateSaldoDisplay);
+  $('btn_pagar').addEventListener('click', simularPago);
+  $('btn_guardar_prog').addEventListener('click', programarPago);
+  $('btn_set_tasa').addEventListener('click', setTasa);
+  $('btn_sim_subida').addEventListener('click', simSubida);
+  $('btn_sim_baja').addEventListener('click', simBaja);
+  $('btn_descargar').addEventListener('click', downloadComprobante);
+  $('btn_limpiar').addEventListener('click', clearStorageConfirm);
+
+  // Guardar al salir
+  window.addEventListener('beforeunload', saveState);
+});
+
+// expose saveState para debugging en consola
+window.saveSimState = saveState;
+</script>
+
+</body>
+</html>
