@@ -1,619 +1,1198 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bank Dominican - Simulador</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bank Dominican | Banca en Línea</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --navy: #09203f;
+            --accent: #0b66ff;
+            --accent-hover: #0052cc;
+            --gold: #d4af37;
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --muted: #6b7686;
+            --border: #e9ecef;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-lg: 0 16px 48px rgba(11, 102, 255, 0.1);
+            --shadow-md: 0 8px 24px rgba(11, 26, 47, 0.07);
+            --shadow-sm: 0 4px 12px rgba(11, 26, 47, 0.05);
+            --font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
 
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        /* --- Base & Reset --- */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            font-family: var(--font-family); 
+            background: var(--bg); 
+            color: #071427; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        a { text-decoration: none; color: var(--accent); }
+        a:hover { color: var(--accent-hover); }
+        h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: 700; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .small-muted { color: var(--muted); font-size: 0.9rem; }
 
-  <style>
-    :root{
-      --primary:#0b5ed7;
-      --muted:#6c757d;
-      --card-bg:#ffffff;
-      --surface:#f7f9fc;
-    }
-    body{ background:var(--surface); font-family: Inter, system-ui, Arial; }
-    .card { border:0; border-radius:12px; background:var(--card-bg); box-shadow: 0 6px 20px rgba(20,30,60,0.06); }
-    .small-muted{ color:var(--muted); font-size:.85rem; }
-    .balance{ font-weight:700; }
-    .tag{ font-size:.75rem; padding:.2rem .5rem; border-radius:.35rem; background:#eef2ff; color:var(--primary); }
-    .comprobante{ background:#fff; padding:1rem; border-radius:.5rem; border:1px dashed #e6eefc; white-space:pre-wrap; }
-    .app-header { display:flex; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
-    .brand { display:flex; gap:.75rem; align-items:center; }
-    .brand .logo { width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,#0b5ed7,#6ea8fe); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; }
-    .muted-block { color:var(--muted); font-size:.9rem; }
-    /* Landing */
-    #landing_page{
-      min-height:100vh;
-      background: linear-gradient(135deg, #0b5ed7, #6ea8fe);
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      color:#fff; text-align:center; padding:24px;
-    }
-    #landing_page .logo-big{
-      width:92px; height:92px; border-radius:20px; background:rgba(255,255,255,.16);
-      display:flex; align-items:center; justify-content:center; font-weight:800; font-size:2rem;
-      box-shadow:0 6px 24px rgba(0,0,0,.18); margin-bottom:16px; animation:float 3s ease-in-out infinite;
-    }
-    #landing_page h1{ font-weight:800; margin:8px 0 6px; }
-    #landing_page p{ opacity:.95; margin-bottom:24px; }
-    @keyframes float { 0%{transform:translateY(0)} 50%{transform:translateY(-8px)} 100%{transform:translateY(0)} }
+        /* --- Loader --- */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
 
-    /* Responsive */
-    @media (max-width: 768px){
-      .app-header { flex-direction:column; align-items:flex-start; gap:.5rem; }
-    }
-  </style>
+        /* --- Auth Container --- */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .auth-panel {
+            width: 100%;
+            max-width: 480px;
+            padding: 28px 32px;
+            border-radius: var(--radius-lg);
+            background: var(--card);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+        .auth-brand { text-align: center; margin-bottom: 24px; }
+        .auth-brand .logo {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent), #66b2ff);
+            color: #fff; display: inline-grid; place-items: center;
+            font-weight: 900; font-size: 28px; box-shadow: var(--shadow-md);
+            margin-bottom: 12px;
+        }
+        .auth-brand .title { font-weight: 800; font-size: 24px; }
+        .auth-brand .subtitle { color: var(--muted); }
+        .auth-footer { text-align: center; margin-top: 24px; color: var(--muted); font-size: 0.85rem; }
+
+        /* --- App Container --- */
+        .app-shell { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #fff, #fbfdff);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+        .sidebar .brand {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px; padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .brand .logo {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent), #66b2ff);
+            color: #fff; display: grid; place-items: center;
+            font-weight: 900; font-size: 20px; box-shadow: var(--shadow-md);
+            flex-shrink: 0;
+        }
+        .brand .title-group .title { font-weight: 800; font-size: 18px; letter-spacing: .3px; }
+        .brand .title-group .sub { color: var(--muted); font-size: 0.88rem; }
+        .nav-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 16px; border-radius: var(--radius-md);
+            color: #344054; font-weight: 600; font-size: 0.95rem;
+            transition: all .2s ease; cursor: pointer;
+        }
+        .nav-item:hover { background: var(--bg); color: var(--accent); transform: translateX(2px); }
+        .nav-item.active {
+            background: var(--accent); color: #fff;
+            box-shadow: 0 8px 24px rgba(11, 102, 255, 0.15);
+        }
+        .nav-item .nav-icon { font-size: 1.2rem; }
+        .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+
+        /* Main Area */
+        .main { flex: 1; padding: 24px 32px; overflow-x: hidden; }
+        .topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 16px; margin-bottom: 24px;
+        }
+        .page-header h1 { font-size: 28px; font-weight: 800; }
+        .page-header p { color: var(--muted); margin-top: 4px; }
+        
+        .top-actions { display: flex; align-items: center; gap: 16px; }
+        .search-input { width: 360px; max-width: 40vw; }
+        .profile-dropdown .dropdown-toggle::after { display: none; }
+        .profile-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--navy); color: white; display: grid; place-items: center;
+            font-weight: 600; cursor: pointer;
+        }
+
+        /* --- Components --- */
+        .card {
+            border-radius: var(--radius-lg);
+            background: var(--card);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease-in-out;
+        }
+        .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .card-header {
+            padding: 0 0 16px; margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-title { font-size: 1.1rem; font-weight: 700; }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .table-responsive { border: 1px solid var(--border); border-radius: var(--radius-md); }
+        .table { margin-bottom: 0; }
+        .table th { font-weight: 600; color: var(--muted); font-size: 0.85rem; text-transform: uppercase; }
+        .btn-primary { background-color: var(--accent); border-color: var(--accent); }
+        .btn-primary:hover { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 0.25rem rgba(11, 102, 255, 0.25);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 992px) {
+            .sidebar { width: 80px; }
+            .sidebar .brand .title-group, .sidebar .nav-item span:last-child, .sidebar-footer div { display: none; }
+            .sidebar .brand { justify-content: center; }
+            .sidebar .nav-item { justify-content: center; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .app-shell { flex-direction: column; }
+            .topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .main { padding: 16px; }
+        }
+    </style>
 </head>
 <body>
-
-<!-- ============ LANDING ============ -->
-<div id="landing_page">
-  <div class="logo-big">BD</div>
-  <h1>Bank Dominican</h1>
-  <p>Paga tu tarjeta de crédito en USD desde tu cuenta DOP sin ir al banco.</p>
-  <div class="d-flex flex-column gap-2" style="width:100%; max-width:260px;">
-    <button id="btn_go_login" class="btn btn-light text-primary fw-bold">Iniciar Sesión</button>
-    <button id="btn_go_register" class="btn btn-outline-light">Registrarse</button>
-  </div>
-</div>
-
-<!-- ============ LOGIN / REGISTER ============ -->
-<div id="auth_container" class="container py-5" style="max-width:980px; display:none;">
-  <div class="row g-4">
-    <div class="col-lg-5">
-      <div class="card p-4">
-        <h4 class="mb-3">Iniciar Sesión</h4>
-        <div id="login_alert"></div>
-        <div class="mb-3">
-          <label class="form-label">Usuario</label>
-          <input id="login_user" class="form-control" placeholder="usuario">
+    
+    <div id="loader">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Contraseña</label>
-          <input id="login_pass" type="password" class="form-control" placeholder="contraseña">
-        </div>
-        <div class="d-flex gap-2">
-          <button id="btn_login" class="btn btn-primary w-100">Entrar</button>
-          <button id="btn_fill_demo" class="btn btn-outline-secondary">Demo</button>
-        </div>
-        <div class="small-muted mt-3">Usuario por defecto: <strong>admin</strong> / Contraseña: <strong>1234</strong></div>
-      </div>
     </div>
 
-    <div class="col-lg-7">
-      <div class="card p-4">
-        <h4 class="mb-3">Registrar nuevo usuario</h4>
-        <div id="reg_alert"></div>
-        <div class="row g-2">
-          <div class="col-md-6">
-            <label class="form-label">Usuario</label>
-            <input id="reg_user" class="form-control" placeholder="usuario nuevo">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Correo</label>
-            <input id="reg_email" class="form-control" placeholder="email@ejemplo.com">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Contraseña</label>
-            <input id="reg_pass" type="password" class="form-control" placeholder="contraseña">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Confirmar contraseña</label>
-            <input id="reg_pass2" type="password" class="form-control" placeholder="repita contraseña">
-          </div>
+    <div id="auth-container" class="auth-container">
+        <div class="auth-brand">
+            <div class="logo">BD</div>
+            <div class="title">Bank Dominican</div>
+            <div class="subtitle">Tu banca en línea, segura y confiable.</div>
         </div>
-        <div class="mt-3 d-flex gap-2">
-          <button id="btn_register" class="btn btn-success">Registrar</button>
-          <button id="btn_clear_users" class="btn btn-outline-danger">Limpiar usuarios (local)</button>
-        </div>
-        <div class="mt-3 muted-block"></div>
-      </div>
+        
+        <section id="view_login" class="view auth-panel">
+            <h3 class="text-center mb-1">Iniciar Sesión</h3>
+            <p class="text-center small-muted mb-4">Ingresa tus credenciales para acceder a tu panel.</p>
+            <div id="login_alert_box" class="mb-3"></div>
+            <form id="login_form">
+                <div class="mb-3">
+                    <label for="login_username" class="form-label small-muted">Usuario</label>
+                    <input id="login_username" class="form-control form-control-lg" placeholder="ej: admin">
+                </div>
+                <div class="mb-3">
+                    <label for="login_password" class="form-label small-muted">Contraseña</label>
+                    <input id="login_password" type="password" class="form-control form-control-lg" placeholder="••••••••">
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="login_remember">
+                        <label class="form-check-label small-muted" for="login_remember">Recordarme</label>
+                    </div>
+                    <a href="#/recover" class="small">¿Olvidaste tu contraseña?</a>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                    <button id="action_fill_admin" type="button" class="btn btn-outline-secondary">Usar datos de demostración</button>
+                </div>
+            </form>
+            <p class="text-center small-muted mt-4">¿No tienes cuenta? <a href="#/register">Crea una ahora</a></p>
+        </section>
+
+        <section id="view_register" class="view auth-panel">
+            <h3 class="text-center mb-1">Crear Cuenta</h3>
+            <p class="text-center small-muted mb-4">Completa el formulario para unirte.</p>
+            <div id="register_alert_box" class="mb-3"></div>
+            <form id="register_form">
+                <div class="mb-3">
+                    <label class="form-label small-muted">Usuario</label>
+                    <input id="reg_username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small-muted">Correo Electrónico</label>
+                    <input id="reg_email" type="email" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small-muted">Contraseña</label>
+                    <input id="reg_password" type="password" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small-muted">Confirmar Contraseña</label>
+                    <input id="reg_password2" type="password" class="form-control" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Registrarme</button>
+                </div>
+            </form>
+            <p class="text-center small-muted mt-4">¿Ya tienes cuenta? <a href="#/login">Inicia sesión</a></p>
+        </section>
+
+        <section id="view_recover" class="view auth-panel">
+            <h3 class="text-center mb-1">Recuperar Contraseña</h3>
+            <p class="text-center small-muted mb-4">Ingresa tu correo y te enviaremos instrucciones.</p>
+            <div id="recover_alert_box" class="mb-3"></div>
+            <form id="recover_form">
+                <div class="mb-3">
+                    <label class="form-label small-muted">Correo Electrónico</label>
+                    <input id="recover_email" type="email" class="form-control form-control-lg" required>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">Enviar Instrucciones</button>
+                    <a href="#/login" class="btn btn-outline-secondary">Volver a Inicio de Sesión</a>
+                </div>
+            </form>
+        </section>
+
+        <footer class="auth-footer">
+            Bank Dominican &copy; <span id="year1"></span>. Todos los derechos reservados.
+        </footer>
     </div>
-  </div>
-</div>
 
-<!-- ============ APP MAIN ============ -->
-<div id="app" style="display:none;">
-  <div class="container py-4">
-    <div class="app-header">
-      <div class="brand">
-        <div class="logo">BD</div>
-        <div>
-          <div style="font-weight:700; font-size:1.1rem;">Bank Dominican — Simulador</div>
-          <div class="small-muted">Pago de tarjetas USD desde cuentas DOP</div>
-        </div>
-      </div>
-      <div style="display:flex; gap:.75rem; align-items:center;">
-        <div class="small-muted" id="logged_user">Hola, Usuario</div>
-        <button id="btn_logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
-      </div>
-    </div>
-
-    <div class="row g-3">
-      <!-- LEFT: Rate & Payment -->
-      <div class="col-lg-6">
-        <div class="card p-3 mb-3">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="mb-0">Tasa de Cambio (DOP → USD)</h5>
-              <div class="small-muted">Fuente: Simulada</div>
-            </div>
-            <div class="text-end">
-              <div id="tasa_display" style="font-size:1.2rem; font-weight:700;">1 USD = 55.00 DOP</div>
-              <div class="small-muted">Última actualización: <span id="tasa_ts">-</span></div>
-            </div>
-          </div>
-
-          <hr/>
-
-          <div class="row g-2">
-            <div class="col-7">
-              <label class="form-label">Monto a pagar (USD)</label>
-              <input id="monto_usd" class="form-control" type="number" min="0" step="0.01" value="100.00">
-            </div>
-            <div class="col-5">
-              <label class="form-label">Comisión (%)</label>
-              <input id="comision_pct" class="form-control" type="number" min="0" step="0.01" value="0.50">
+    <div id="app-container" class="app-shell" style="display: none;">
+        <aside class="sidebar" aria-label="Navegación principal">
+            <div class="brand">
+                <div class="logo">BD</div>
+                <div class="title-group">
+                    <div class="title">Bank Dominican</div>
+                    <div class="sub">Banca en Línea</div>
+                </div>
             </div>
 
-            <div class="col-12 mt-2">
-              <label class="form-label">Cuenta Origen (DOP)</label>
-              <select id="select_cuenta" class="form-select"></select>
-              <div class="small-muted mt-1">Saldo: <span id="saldo_cuenta" class="balance">0.00 DOP</span></div>
+            <nav aria-label="Menú principal">
+                <ul class="nav-list" id="sidebar_nav">
+                    <li><a class="nav-item" data-view="dashboard" href="#/dashboard"><span class="nav-icon">📊</span> <span>Dashboard</span></a></li>
+                    <li><a class="nav-item" data-view="exchange" href="#/exchange"><span class="nav-icon">💱</span> <span>Cambio y Pagos</span></a></li>
+                    <li><a class="nav-item" data-view="accounts" href="#/accounts"><span class="nav-icon">🏦</span> <span>Cuentas</span></a></li>
+                    <li><a class="nav-item" data-view="cards" href="#/cards"><span class="nav-icon">💳</span> <span>Tarjetas</span></a></li>
+                    <li><a class="nav-item" data-view="history" href="#/history"><span class="nav-icon">📜</span> <span>Historial</span></a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <ul class="nav-list">
+                    <li><a class="nav-item" data-view="profile" href="#/profile"><span class="nav-icon">👤</span> <span>Mi Perfil</span></a></li>
+                    <li><a class="nav-item" data-view="settings" href="#/settings"><span class="nav-icon">⚙️</span> <span>Ajustes</span></a></li>
+                    <li><a class="nav-item" href="#" id="action_logout"><span class="nav-icon">🚪</span> <span>Cerrar Sesión</span></a></li>
+                </ul>
             </div>
+        </aside>
 
-            <div class="col-12 mt-2">
-              <label class="form-label">Tarjeta destino (USD)</label>
-              <select id="select_tarjeta" class="form-select"></select>
-            </div>
+        <main class="main" id="main_content">
+            <header class="topbar">
+                <div class="page-header" id="page_header">
+                    <h1>Dashboard</h1>
+                    <p>Bienvenido de nuevo, <span id="user_name_header"></span></p>
+                </div>
+                <div class="top-actions">
+                    <div class="input-group search-input" role="search">
+                        <span class="input-group-text">🔍</span>
+                        <input id="input_search" type="text" class="form-control" placeholder="Buscar transacciones...">
+                    </div>
+                    <div class="dropdown profile-dropdown">
+                        <div id="user_avatar" class="profile-avatar dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"></div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header" id="dropdown_username"></h6></li>
+                            <li><p class="dropdown-header small-muted" id="dropdown_useremail" style="margin-top:-8px;"></p></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#/profile">Mi Perfil</a></li>
+                            <li><a class="dropdown-item" href="#/settings">Ajustes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" id="action_logout_dropdown" href="#">Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
 
-            <div class="col-12 mt-3 d-flex gap-2">
-              <button id="btn_calcular" class="btn btn-primary">Calcular</button>
-              <button id="btn_pagar" class="btn btn-success">Simular Pago</button>
-              <button id="btn_guardar_prog" class="btn btn-outline-secondary">Programar Pago</button>
-            </div>
+            <div id="view_container">
+                <section id="view_dashboard" class="view">
+                    <div class="grid-layout">
+                           <div class="card bg-primary text-white">
+                               <h5>Saldo Total (DOP)</h5>
+                               <p class="h2 fw-bold" id="dash_total_balance">$0.00</p>
+                               <small>Suma de todas tus cuentas en pesos.</small>
+                           </div>
+                           <div class="card">
+                               <h5>Tasa de Cambio</h5>
+                               <p class="h3" id="dash_exchange_rate">1 USD = $0.00 DOP</p>
+                               <small class="small-muted">Actualizada: <span id="dash_rate_updated"></span></small>
+                           </div>
+                           <div class="card">
+                               <h5>Último Pago Realizado</h5>
+                               <p class="h3" id="dash_last_payment">$0.00 USD</p>
+                               <small class="small-muted" id="dash_last_payment_date">No hay pagos recientes.</small>
+                           </div>
+                    </div>
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title">Operación Rápida</h5>
+                        </div>
+                        <div class="card-body">
+                             <p>Realiza un pago rápido a tu tarjeta de crédito en USD.</p>
+                             <a href="#/exchange" class="btn btn-primary">Ir a Pagos</a>
+                        </div>
+                    </div>
+                     <div class="card mt-4">
+                         <div class="card-header">
+                             <h5 class="card-title">Actividad Reciente</h5>
+                             <a href="#/history" class="btn btn-sm btn-outline-primary">Ver todo</a>
+                         </div>
+                         <div class="card-body p-0">
+                             <div class="table-responsive">
+                                 <table class="table">
+                                      <tbody id="dash_recent_activity">
+                                          </tbody>
+                                     </table>
+                                  </div>
+                              </div>
+                          </div>
+                      </section>
+                      
+                      <section id="view_exchange" class="view">
+                           <div class="row">
+                              <div class="col-lg-8">
+                                   <div class="card">
+                                       <div class="card-header"><h5 class="card-title">Realizar Pago de Tarjeta en USD</h5></div>
+                                       <div class="card-body">
+                                           <div id="exchange_alert_box" class="mb-3"></div>
+                                           <form id="exchange_form">
+                                               <div class="row g-3">
+                                                   <div class="col-md-6">
+                                                       <label class="form-label">Monto a pagar (USD)</label>
+                                                       <input id="ex_monto_usd" type="number" class="form-control" value="100" step="0.01" min="0" required>
+                                                   </div>
+                                                   <div class="col-md-6">
+                                                       <label class="form-label">Cuenta de Origen (DOP)</label>
+                                                       <select id="ex_select_account" class="form-select" required></select>
+                                                   </div>
+                                                   <div class="col-12">
+                                                       <label class="form-label">Tarjeta a Pagar (USD)</label>
+                                                       <select id="ex_select_card" class="form-select" required></select>
+                                                   </div>
+                                               </div>
+                                           </form>
+                                       </div>
+                                   </div>
+                               </div>
+                               <div class="col-lg-4">
+                                     <div class="card">
+                                        <div class="card-header"><h5 class="card-title">Resumen de la Operación</h5></div>
+                                        <div id="ex_summary" class="card-body">
+                                            <p class="small-muted">Completa el formulario para ver el resumen.</p>
+                                        </div>
+                                        <div class="card-footer bg-transparent" id="ex_confirm_footer" style="display:none;">
+                                            <div class="d-grid">
+                                                <button id="ex_pay_btn" type="button" class="btn btn-success">Confirmar y Pagar</button>
+                                            </div>
+                                        </div>
+                                     </div>
+                               </div>
+                           </div>
+                       </section>
 
-            <div class="col-12 mt-3">
-              <div class="card p-2">
-                <div><strong>Resumen</strong></div>
-                <div class="mt-1">Monto USD: <span id="res_usd">-</span></div>
-                <div>Monto DOP (sin comisión): <span id="res_dop">-</span></div>
-                <div>Comisión (DOP): <span id="res_comision">-</span></div>
-                <div class="mt-1"><strong>Total a debitar (DOP): <span id="res_total" style="font-weight:700">-</span></strong></div>
-              </div>
-            </div>
+                       <section id="view_accounts" class="view">
+                            <div id="accounts_list" class="grid-layout">
+                                </div>
+                       </section>
 
-            <div class="col-12 mt-3">
-              <div id="alert_placeholder"></div>
-            </div>
-          </div>
-        </div>
+                       <section id="view_cards" class="view">
+                            <div id="cards_list" class="grid-layout">
+                                 </div>
+                       </section>
 
-        <!-- Admin small -->
-        <div class="card p-3">
-          <h6>Administración (simulada)</h6>
-          <div class="row g-2">
-            <div class="col-md-7">
-              <label class="form-label">Tasa (DOP por 1 USD)</label>
-              <input id="input_tasa_manual" class="form-control" type="number" step="0.01" value="55.00">
-            </div>
-            <div class="col-md-5 d-flex align-items-end gap-2">
-              <button id="btn_set_tasa" class="btn btn-outline-primary w-100">Actualizar tasa</button>
-            </div>
+                       <section id="view_history" class="view">
+                           <div class="card">
+                               <div class="card-header">
+                                   <h5 class="card-title">Historial de Transacciones</h5>
+                                   <button id="history_clear_btn" class="btn btn-sm btn-outline-danger">Limpiar Historial</button>
+                               </div>
+                               <div class="card-body p-0">
+                                     <div class="table-responsive">
+                                        <table class="table table-hover">
+                                             <thead>
+                                                 <tr>
+                                                     <th>Fecha</th>
+                                                     <th>Descripción</th>
+                                                     <th>Monto (USD)</th>
+                                                     <th>Monto (DOP)</th>
+                                                     <th>Tasa</th>
+                                                     <th>Cuenta Origen</th>
+                                                 </tr>
+                                             </thead>
+                                             <tbody id="history_table_body">
+                                                 </tbody>
+                                         </table>
+                                     </div>
+                               </div>
+                               <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+                                    <span id="pagination_info" class="small-muted"></span>
+                                     <nav>
+                                         <ul class="pagination" style="margin-bottom:0;">
+                                             <li class="page-item"><a class="page-link" href="#" id="pagination_prev">Anterior</a></li>
+                                             <li class="page-item"><a class="page-link" href="#" id="pagination_next">Siguiente</a></li>
+                                         </ul>
+                                     </nav>
+                               </div>
+                           </div>
+                       </section>
+                       
+                       <section id="view_profile" class="view">
+                           <div class="card">
+                               <div class="card-header"><h5 class="card-title">Mi Perfil</h5></div>
+                               <div class="card-body">
+                                     <div id="profile_alert_box"></div>
+                                    <form id="profile_form">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nombre de Usuario</label>
+                                            <input type="text" id="profile_username" class="form-control" disabled>
+                                            <div class="form-text">El nombre de usuario no se puede cambiar.</div>
+                                        </div>
+                                         <div class="mb-3">
+                                            <label class="form-label">Nombre Completo</label>
+                                            <input type="text" id="profile_fullname" class="form-control">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Correo Electrónico</label>
+                                            <input type="email" id="profile_email" class="form-control">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                    </form>
+                               </div>
+                           </div>
+                       </section>
 
-            <div class="col-6">
-              <label class="form-label">Simular subida</label>
-              <button id="btn_sim_subida" class="btn btn-sm btn-warning w-100">+ Subir 2%</button>
-            </div>
-            <div class="col-6">
-              <label class="form-label">Simular baja</label>
-              <button id="btn_sim_baja" class="btn btn-sm btn-info w-100">- Bajar 2%</button>
-            </div>
-          </div>
-        </div>
-      </div>
+                       <section id="view_settings" class="view">
+                            <div class="card">
+                                <div class="card-header"><h5 class="card-title">Ajustes de la Aplicación</h5></div>
+                                <div class="card-body">
+                                    <div id="settings_alert_box"></div>
+                                    <form id="settings_form">
+                                        <div class="mb-4">
+                                            <h6>Tema Visual</h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="theme" id="theme_light" checked>
+                                                <label class="form-check-label" for="theme_light">Claro (Predeterminado)</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="theme" id="theme_dark" disabled>
+                                                <label class="form-check-label" for="theme_dark">Oscuro (Próximamente)</label>
+                                            </div>
+                                        </div>
+                                        <div class="mb-4">
+                                            <h6>Notificaciones por Correo</h6>
+                                             <div class="form-check form-switch">
+                                                 <input class="form-check-input" type="checkbox" role="switch" id="setting_notif_payments" checked>
+                                                 <label class="form-check-label" for="setting_notif_payments">Confirmación de pagos</label>
+                                             </div>
+                                             <div class="form-check form-switch">
+                                                 <input class="form-check-input" type="checkbox" role="switch" id="setting_notif_news">
+                                                 <label class="form-check-label" for="setting_notif_news">Novedades y promociones</label>
+                                             </div>
+                                         </div>
+                                         <button type="submit" class="btn btn-primary">Guardar Ajustes</button>
+                                     </form>
+                                 </div>
+                             </div>
+                         </section>
 
-      <!-- RIGHT: History & Programmed & Notifs -->
-      <div class="col-lg-6">
-        <div class="card p-3 mb-3">
-          <h6>Historial de Pagos</h6>
-          <div id="historial_list" style="max-height:260px; overflow:auto;"></div>
-        </div>
+                     </div>
 
-        <div class="card p-3 mb-3">
-          <h6>Pagos Programados</h6>
-          <div id="programados_list"></div>
-        </div>
+                     <footer class="text-center text-muted mt-4">
+                         Bank Dominican &copy; <span id="year2"></span>
+                     </footer>
+                 </main>
+             </div>
 
-        <div class="card p-3 mb-3">
-          <h6>Notificaciones</h6>
-          <div id="notifs_list"></div>
-        </div>
+             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
-        <div class="card p-3">
-          <h6>Comprobante (último pago)</h6>
-          <pre id="comprobante" class="comprobante">Sin operaciones aún.</pre>
-          <div class="d-flex gap-2 mt-2">
-            <button id="btn_descargar" class="btn btn-outline-primary">Descargar comprobante</button>
-            <button id="btn_limpiar" class="btn btn-outline-danger">Limpiar historial (local)</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+            <script>
+            document.addEventListener('DOMContentLoaded', () => {
 
-<!-- ============ SCRIPTS ============ -->
-<script>
-/* -------------------------------
-   STORAGE KEYS & ESTADO INICIAL
-   ------------------------------- */
-const KEY_USERS = 'sim_usuarios_v1';
-const KEY_SESSION = 'sim_session_user';
-const KEY_STATE = 'sim_state_v1';
+                // --- CONFIG & CONSTANTS ---
+                const DB_PREFIX = 'bd_pro_';
+                const KEY_USERS = `${DB_PREFIX}users`;
+                const KEY_SESSION = `${DB_PREFIX}session`;
+                const KEY_APP_STATE = `${DB_PREFIX}app_state`;
+                const HISTORY_PAGE_SIZE = 5;
 
-// Pre-defined admin user
-function ensureDefaultUsers(){
-  const raw = localStorage.getItem(KEY_USERS);
-  if(!raw){
-    const admin = { username:'admin', email:'admin@local', password:'1234' }; // simulación
-    localStorage.setItem(KEY_USERS, JSON.stringify([admin]));
-  }else{
-    try { JSON.parse(raw); } catch(e){ localStorage.setItem(KEY_USERS, JSON.stringify([{ username:'admin', email:'admin@local', password:'1234' }])); }
-  }
-}
+                // --- DOM UTILITIES ---
+                const $ = id => document.getElementById(id);
+                const qs = sel => document.querySelector(sel);
+                const qsa = sel => Array.from(document.querySelectorAll(sel));
+                const now = () => new Date().toLocaleString('es-DO');
+                const money = (n, currency = 'DOP') => {
+                    return Number(n).toLocaleString('es-DO', { 
+                        style: 'currency', 
+                        currency: currency,
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    });
+                };
 
-// Default state
-function defaultState(){
-  return {
-    tasa: 55.00,
-    tasa_ts: new Date().toLocaleString(),
-    comision_default_pct: 0.5,
-    usuario: { id: 1, nombre: 'Usuario Demo' },
-    cuentas: [
-      { id: 1, numero: '001-000-123456', moneda: 'DOP', saldo: 50000.00, banco: 'Bank Dominican' },
-      { id: 2, numero: '002-000-987654', moneda: 'DOP', saldo: 1500.00, banco: 'Bank Dominican' }
-    ],
-    tarjetas: [
-      { id: 1, numero_mask: '**** **** **** 3456', moneda: 'USD', marca: 'Visa' },
-      { id: 2, numero_mask: '**** **** **** 7890', moneda: 'USD', marca: 'Mastercard' }
-    ],
-    historial: [],
-    pagos: [],
-    programados: [],
-    notifs: []
-  };
-}
+                const showAlert = (targetId, message, type = 'info') => {
+                    const el = $(targetId);
+                    if (!el) return;
+                    const alertClass = `alert-${type}`;
+                    el.innerHTML = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                };
 
-let state = loadState() || defaultState();
+                const hideLoader = () => {
+                    const loader = $('loader');
+                    if (loader) {
+                        loader.style.display = 'none';
+                    }
+                };
 
-// ---------- AUTH (register / login / session) ----------
-ensureDefaultUsers();
+                const showLoader = () => {
+                    const loader = $('loader');
+                    if (loader) {
+                        loader.style.display = 'flex';
+                    }
+                };
 
-function loadUsers(){
-  try{ return JSON.parse(localStorage.getItem(KEY_USERS) || '[]'); } catch(e){ return []; }
-}
-function saveUsers(list){ localStorage.setItem(KEY_USERS, JSON.stringify(list)); }
+                const generateId = () => Math.random().toString(36).substring(2, 10);
+                const getInitials = (name) => {
+                    if (!name) return 'U';
+                    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                };
+                
+                // --- DATA & STATE MANAGEMENT (STORE) ---
+                const store = {
+                    state: {
+                        user: null,
+                        appData: {
+                            accounts: [],
+                            cards: [],
+                            history: [],
+                            exchangeRate: { rate: 58.75, updated: now() },
+                            lastPayment: null,
+                        },
+                        historyPage: 0,
+                        currentTransaction: null
+                    },
+                    init() {
+                        this.setupDemoUser();
+                        const storedState = JSON.parse(localStorage.getItem(KEY_APP_STATE));
+                        if (storedState) {
+                            this.state.appData = { ...this.state.appData, ...storedState };
+                        } else {
+                            this.state.appData.accounts = [
+                                { id: generateId(), name: 'Cuenta de Ahorros', balance: 150000, currency: 'DOP' },
+                                { id: generateId(), name: 'Cuenta Corriente', balance: 75000, currency: 'DOP' },
+                                { id: generateId(), name: 'Cuenta en Dólares', balance: 1250, currency: 'USD' }
+                            ];
+                            this.state.appData.cards = [
+                                { id: generateId(), name: 'Visa Gold', balance: 800, currency: 'USD', minPayment: 25 },
+                                { id: generateId(), name: 'MasterCard Platinum', balance: 150, currency: 'USD', minPayment: 10 }
+                            ];
+                            this.save();
+                        }
+                    },
+                    setupDemoUser() {
+                        let users = JSON.parse(localStorage.getItem(KEY_USERS) || '[]');
+                        if (!users.find(u => u.username === 'admin')) {
+                            const demoUser = { username: 'admin', email: 'admin@bank.com', password: 'password123', name: 'Demo User', id: generateId() };
+                            users.push(demoUser);
+                            localStorage.setItem(KEY_USERS, JSON.stringify(users));
+                        }
+                    },
+                    login(user) {
+                        this.state.user = user;
+                        localStorage.setItem(KEY_SESSION, JSON.stringify(user));
+                    },
+                    logout() {
+                        this.state.user = null;
+                        localStorage.removeItem(KEY_SESSION);
+                    },
+                    isLoggedIn() {
+                        const session = localStorage.getItem(KEY_SESSION);
+                        if (session) {
+                            this.state.user = JSON.parse(session);
+                            return true;
+                        }
+                        return false;
+                    },
+                    save() {
+                        localStorage.setItem(KEY_APP_STATE, JSON.stringify(this.state.appData));
+                    },
+                    addTransaction(transaction) {
+                        this.state.appData.history.unshift(transaction);
+                        this.state.appData.lastPayment = transaction;
+                        this.save();
+                    }
+                };
 
-function registerUser(){
-  const user = document.getElementById('reg_user').value.trim();
-  const email = document.getElementById('reg_email').value.trim();
-  const pass = document.getElementById('reg_pass').value;
-  const pass2 = document.getElementById('reg_pass2').value;
-  const alertBox = document.getElementById('reg_alert'); alertBox.innerHTML = '';
-  if(!user || !email || !pass){ alertBox.innerHTML = '<div class="alert alert-warning">Completa todos los campos.</div>'; return; }
-  if(pass !== pass2){ alertBox.innerHTML = '<div class="alert alert-warning">Las contraseñas no coinciden.</div>'; return; }
-  const users = loadUsers();
-  if(users.some(u=>u.username.toLowerCase()===user.toLowerCase())){ alertBox.innerHTML = '<div class="alert alert-danger">Usuario ya existe.</div>'; return; }
-  users.push({ username:user, email, password:pass });
-  saveUsers(users);
-  alertBox.innerHTML = '<div class="alert alert-success">Usuario registrado. Ya puedes iniciar sesión.</div>';
-  document.getElementById('reg_user').value=''; document.getElementById('reg_email').value=''; document.getElementById('reg_pass').value=''; document.getElementById('reg_pass2').value='';
-}
+                // --- TEMPLATE RENDERING ---
+                const renderDashboard = () => {
+                    const totalDOP = store.state.appData.accounts
+                        .filter(acc => acc.currency === 'DOP')
+                        .reduce((sum, acc) => sum + acc.balance, 0);
 
-function attemptLogin(){
-  const u = document.getElementById('login_user').value.trim();
-  const p = document.getElementById('login_pass').value;
-  const alertBox = document.getElementById('login_alert'); alertBox.innerHTML = '';
-  if(!u || !p){ alertBox.innerHTML = '<div class="alert alert-warning">Completa usuario y contraseña.</div>'; return; }
-  const users = loadUsers();
-  const found = users.find(x=> x.username === u && x.password === p);
-  if(found){
-    localStorage.setItem(KEY_SESSION, JSON.stringify({ username: found.username, email: found.email }));
-    showApp();
-  } else {
-    alertBox.innerHTML = '<div class="alert alert-danger">Credenciales incorrectas.</div>';
-  }
-}
+                    const lastPayment = store.state.appData.lastPayment;
 
-function fillDemoLogin(){ document.getElementById('login_user').value='admin'; document.getElementById('login_pass').value='1234'; }
-function logout(){ localStorage.removeItem(KEY_SESSION); hideApp(); }
+                    const dashTotalBalance = $('dash_total_balance');
+                    const dashExchangeRate = $('dash_exchange_rate');
+                    const dashRateUpdated = $('dash_rate_updated');
+                    const dashLastPayment = $('dash_last_payment');
+                    const dashLastPaymentDate = $('dash_last_payment_date');
 
-// ---------- STATE (localStorage) ----------
-function loadState(){
-  try{
-    const raw = localStorage.getItem(KEY_STATE);
-    return raw ? JSON.parse(raw) : null;
-  }catch(e){ return null; }
-}
-function saveState(){ localStorage.setItem(KEY_STATE, JSON.stringify(state)); }
-function resetState(){ state = defaultState(); saveState(); }
+                    if (dashTotalBalance) dashTotalBalance.innerText = money(totalDOP, 'DOP');
+                    if (dashExchangeRate) dashExchangeRate.innerText = `1 USD = ${money(store.state.appData.exchangeRate.rate, 'DOP')} DOP`;
+                    if (dashRateUpdated) dashRateUpdated.innerText = store.state.appData.exchangeRate.updated;
 
-// ---------- UI helpers & rendering ----------
-function $(id){ return document.getElementById(id); }
-function money(n){ return Number(n).toLocaleString('es-DO', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+                    if (lastPayment) {
+                        if (dashLastPayment) dashLastPayment.innerText = money(lastPayment.amount, lastPayment.currency);
+                        if (dashLastPaymentDate) dashLastPaymentDate.innerText = lastPayment.date;
+                    }
 
-function updateTasaUI(){
-  $('tasa_display').textContent = `1 USD = ${state.tasa.toFixed(2)} DOP`;
-  $('tasa_ts').textContent = state.tasa_ts;
-  $('input_tasa_manual').value = state.tasa.toFixed(2);
-  $('comision_pct').value = state.comision_default_pct.toFixed(2);
-}
+                    const recentActivity = store.state.appData.history.slice(0, 5);
+                    const historyBody = $('dash_recent_activity');
+                    if (historyBody) {
+                        historyBody.innerHTML = recentActivity.map(t => `
+                            <tr>
+                                <td>${t.date}</td>
+                                <td>${t.description}</td>
+                                <td class="text-end">${money(t.amount, t.currency)}</td>
+                            </tr>
+                        `).join('') || `<tr><td colspan="3" class="text-center text-muted">No hay actividad reciente.</td></tr>`;
+                    }
+                };
 
-function renderAccounts(){
-  const sel = $('select_cuenta'); sel.innerHTML = '';
-  state.cuentas.forEach(c=>{
-    const opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = `${c.numero} — ${c.banco} — Saldo: ${money(c.saldo)} DOP`;
-    sel.appendChild(opt);
-  });
-  updateSaldoDisplay();
-}
-function renderCards(){
-  const sel = $('select_tarjeta'); sel.innerHTML='';
-  state.tarjetas.forEach(t=>{
-    const opt = document.createElement('option');
-    opt.value = t.id; opt.textContent = `${t.numero_mask} — ${t.marca} — ${t.moneda}`;
-    sel.appendChild(opt);
-  });
-}
-function renderHistorial(){
-  const cont = $('historial_list'); cont.innerHTML='';
-  const list = [...state.pagos].reverse();
-  if(list.length===0){ cont.innerHTML='<div class="small-muted">No hay pagos registrados.</div>'; return; }
-  list.forEach(p=>{
-    const el = document.createElement('div'); el.className='border-bottom py-2';
-    el.innerHTML = `<div class="d-flex justify-content-between align-items-start">
-      <div><strong>Pago #${p.id}</strong> — ${p.monto_usd.toFixed(2)} USD <div class="small-muted">Tarjeta: ${p.tarjeta_mask} · Cuenta: ${p.cuenta_num}</div></div>
-      <div class="text-end"><div><span class="tag">${p.estado}</span></div><div class="small-muted mt-1">${p.fecha}</div></div>
-    </div>`;
-    cont.appendChild(el);
-  });
-}
-function renderProgramados(){
-  const cont = $('programados_list'); cont.innerHTML='';
-  if(state.programados.length===0){ cont.innerHTML='<div class="small-muted">No hay pagos programados.</div>'; return; }
-  state.programados.forEach(pr=>{
-    const d = document.createElement('div'); d.className='border-bottom py-2';
-    d.innerHTML = `<div><strong>Prog #${pr.id}</strong> · ${pr.monto_usd.toFixed(2)} USD · ${pr.periodicidad} · ${pr.fecha_ejecucion}</div>`;
-    cont.appendChild(d);
-  });
-}
-function renderNotifs(){
-  const cont = $('notifs_list'); cont.innerHTML='';
-  if(state.notifs.length===0){ cont.innerHTML='<div class="small-muted">Sin notificaciones.</div>'; return; }
-  state.notifs.slice().reverse().forEach(n=>{
-    const d = document.createElement('div'); d.className='border-bottom py-2';
-    d.innerHTML = `<div><strong>${n.titulo}</strong><div class="small-muted">${n.mensaje}</div><div class="small-muted">${n.fecha}</div></div>`;
-    cont.appendChild(d);
-  });
-}
-function updateSaldoDisplay(){
-  const sel = $('select_cuenta'); const id = Number(sel.value);
-  const c = state.cuentas.find(x=>x.id===id);
-  $('saldo_cuenta').textContent = c ? `${money(c.saldo)} DOP` : '0.00 DOP';
-}
+                const renderAccounts = () => {
+                    const accountsList = $('accounts_list');
+                    if (!accountsList) return;
+                    accountsList.innerHTML = store.state.appData.accounts.map(acc => `
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 class="card-title">${acc.name}</h5>
+                                <small class="small-muted">${acc.currency}</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="h3 fw-bold">${money(acc.balance, acc.currency)}</p>
+                                <small>Balance disponible</small>
+                            </div>
+                        </div>
+                    `).join('') || '<p class="text-center text-muted">No tienes cuentas disponibles.</p>';
+                };
 
-// ---------- Conversion & Payments ----------
-function calcularConversion(){
-  const usd = parseFloat($('monto_usd').value) || 0;
-  const tasa = Number(state.tasa);
-  const dop = +(usd * tasa);
-  const pct = +(parseFloat($('comision_pct').value) || state.comision_default_pct);
-  const comision_dop = +(dop * (pct/100));
-  const total = +(dop + comision_dop);
-  $('res_usd').textContent = `${usd.toFixed(2)} USD`;
-  $('res_dop').textContent = `${money(dop)} DOP`;
-  $('res_comision').textContent = `${money(comision_dop)} DOP (${pct.toFixed(2)}%)`;
-  $('res_total').textContent = `${money(total)} DOP`;
-  return { usd, dop, comision_dop, total, pct };
-}
+                const renderCards = () => {
+                    const cardsList = $('cards_list');
+                    if (!cardsList) return;
+                    cardsList.innerHTML = store.state.appData.cards.map(card => `
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between">
+                                <h5 class="card-title">${card.name}</h5>
+                                <small class="small-muted">${card.currency}</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="h3 fw-bold">${money(card.balance, card.currency)}</p>
+                                <small>Balance a pagar</small>
+                            </div>
+                        </div>
+                    `).join('') || '<p class="text-center text-muted">No tienes tarjetas disponibles.</p>';
+                };
 
-function pushNotif(titulo, mensaje){
-  const n = { id: Date.now(), titulo, mensaje, fecha: new Date().toLocaleString() };
-  state.notifs.push(n); saveState(); renderNotifs();
-}
+                const renderHistory = () => {
+                    const tableBody = $('history_table_body');
+                    if (!tableBody) return;
+                    
+                    const historyData = store.state.appData.history;
+                    const totalPages = Math.ceil(historyData.length / HISTORY_PAGE_SIZE);
+                    const start = store.state.historyPage * HISTORY_PAGE_SIZE;
+                    const end = start + HISTORY_PAGE_SIZE;
+                    const paginatedData = historyData.slice(start, end);
 
-function simularPago(){
-  const calc = calcularConversion();
-  const cuentaId = Number($('select_cuenta').value);
-  const tarjetaId = Number($('select_tarjeta').value);
-  const cuenta = state.cuentas.find(c=>c.id===cuentaId);
-  const tarjeta = state.tarjetas.find(t=>t.id===tarjetaId);
-  if(!cuenta || !tarjeta){ showAlert('Selecciona cuenta y tarjeta.', 'warning'); return; }
+                    tableBody.innerHTML = paginatedData.map(t => `
+                        <tr>
+                            <td>${t.date}</td>
+                            <td>${t.description}</td>
+                            <td>${t.amount ? money(t.amount, 'USD') : '-'}</td>
+                            <td>${t.amountDOP ? money(t.amountDOP, 'DOP') : '-'}</td>
+                            <td>${t.exchangeRate}</td>
+                            <td>${t.sourceAccount}</td>
+                        </tr>
+                    `).join('') || `<tr><td colspan="6" class="text-center text-muted">No hay transacciones en el historial.</td></tr>`;
 
-  if(cuenta.saldo + 0.0001 < calc.total){
-    showAlert('Saldo insuficiente.', 'danger');
-    const pagoFail = {
-      id: state.pagos.length + 1,
-      monto_usd: calc.usd, monto_dop: calc.dop, comision_dop: calc.comision_dop,
-      total_debitado: calc.total, fecha: new Date().toLocaleString(), estado: 'FALLIDO',
-      cuenta_num: cuenta.numero, tarjeta_mask: tarjeta.numero_mask, referencia: 'N/A'
-    };
-    state.pagos.push(pagoFail);
-    state.historial.push({ id:Date.now(), tipo:'Pago FALLIDO', fecha:pagoFail.fecha, detalle:`Pago ${pagoFail.id} fallido`});
-    pushNotif('Pago fallido', `Pago de ${calc.usd.toFixed(2)} USD falló por saldo insuficiente.`);
-    saveState(); renderHistorial();
-    return;
-  }
+                    const paginationInfo = $('pagination_info');
+                    if (paginationInfo) {
+                        if (historyData.length > 0) {
+                            const showingStart = start + 1;
+                            const showingEnd = Math.min(end, historyData.length);
+                            paginationInfo.innerText = `Mostrando ${showingStart} a ${showingEnd} de ${historyData.length} transacciones`;
+                        } else {
+                            paginationInfo.innerText = '';
+                        }
+                    }
 
-  cuenta.saldo = +( (cuenta.saldo - calc.total).toFixed(2) );
-  const referencia = 'REF' + Math.floor(Math.random()*900000 + 100000);
-  const pago = {
-    id: state.pagos.length + 1,
-    monto_usd: calc.usd, monto_dop: calc.dop, comision_dop: calc.comision_dop,
-    total_debitado: calc.total, fecha: new Date().toLocaleString(), estado: 'PROCESADO',
-    cuenta_num: cuenta.numero, tarjeta_mask: tarjeta.numero_mask, referencia
-  };
-  state.pagos.push(pago);
-  state.historial.push({ id:Date.now(), tipo:'Pago', fecha:pago.fecha, detalle:`Pago ${pago.id} procesado. Ref ${referencia}`});
-  pushNotif('Pago procesado', `Pago #${pago.id} procesado por ${money(pago.total_debitado)} DOP.`);
-  generateComprobante(pago); saveState(); renderAccounts(); renderHistorial();
-  showAlert(`Pago procesado. Ref ${referencia}`, 'success');
-}
+                    const prevBtn = $('pagination_prev');
+                    const nextBtn = $('pagination_next');
+                    if (prevBtn) prevBtn.parentElement.classList.toggle('disabled', store.state.historyPage <= 0);
+                    if (nextBtn) nextBtn.parentElement.classList.toggle('disabled', store.state.historyPage >= totalPages - 1);
+                };
 
-function generateComprobante(pago){
-  const txt = `COMPROBANTE DE PAGO
--------------------
-ID Pago: ${pago.id}
-Referencia: ${pago.referencia}
-Fecha: ${pago.fecha}
+                const renderProfile = () => {
+                    const user = store.state.user;
+                    if (user) {
+                        const profileUsername = $('profile_username');
+                        const profileFullname = $('profile_fullname');
+                        const profileEmail = $('profile_email');
+                        
+                        if (profileUsername) profileUsername.value = user.username;
+                        if (profileFullname) profileFullname.value = user.name || '';
+                        if (profileEmail) profileEmail.value = user.email;
+                    }
+                };
 
-Tarjeta destino: ${pago.tarjeta_mask}
-Cuenta origen: ${pago.cuenta_num}
+                const renderExchangeForm = () => {
+                    const accountsSelect = $('ex_select_account');
+                    const cardsSelect = $('ex_select_card');
 
-Monto (USD): ${pago.monto_usd.toFixed(2)}
-Monto (DOP): ${money(pago.monto_dop)} DOP
-Comisión: ${money(pago.comision_dop)} DOP
-Total debitado: ${money(pago.total_debitado)} DOP
+                    if (accountsSelect) {
+                        accountsSelect.innerHTML = store.state.appData.accounts
+                            .filter(acc => acc.currency === 'DOP')
+                            .map(acc => `<option value="${acc.id}">${acc.name} (${money(acc.balance, acc.currency)})</option>`)
+                            .join('');
+                    }
 
-Estado: ${pago.estado}
-`;
-  $('comprobante').textContent = txt;
-}
+                    if (cardsSelect) {
+                        cardsSelect.innerHTML = store.state.appData.cards
+                            .map(card => `<option value="${card.id}">${card.name} (${money(card.balance, card.currency)} a pagar)</option>`)
+                            .join('');
+                    }
 
-function programarPago(){
-  const calc = calcularConversion();
-  const fecha = new Date(); fecha.setDate(fecha.getDate() + 3);
-  const pr = {
-    id: state.programados.length + 1,
-    id_usuario: state.usuario.id,
-    monto_usd: calc.usd,
-    fecha_ejecucion: fecha.toLocaleDateString(),
-    periodicidad: 'Único',
-    estado: 'Programado',
-    tarjeta_mask: state.tarjetas[0].numero_mask
-  };
-  state.programados.push(pr);
-  state.historial.push({ id:Date.now(), tipo:'Programado', fecha:new Date().toLocaleString(), detalle:`Pago programado ${pr.id}`});
-  pushNotif('Pago programado', `Pago #${pr.id} programado para ${pr.fecha_ejecucion}`);
-  saveState(); renderProgramados();
-  showAlert('Pago programado (simulado).', 'info');
-}
+                    updateExchangeSummary();
+                };
+                
+                // --- ROUTER & VIEW MANAGEMENT ---
+                const showView = (viewId) => {
+                    qsa('.view').forEach(view => view.classList.remove('active'));
+                    
+                    const view = $(`view_${viewId}`);
+                    if (view) {
+                        view.classList.add('active');
+                        
+                        const header = $('page_header');
+                        if (header) {
+                            const titles = {
+                                dashboard: 'Dashboard',
+                                exchange: 'Cambio y Pagos',
+                                accounts: 'Mis Cuentas',
+                                cards: 'Mis Tarjetas',
+                                history: 'Historial de Transacciones',
+                                profile: 'Mi Perfil',
+                                settings: 'Ajustes'
+                            };
+                            
+                            const subtitles = {
+                                dashboard: `Bienvenido de nuevo, ${store.state.user?.name || store.state.user?.username || 'Usuario'}`,
+                                exchange: 'Realiza pagos de tarjetas de crédito en USD',
+                                accounts: 'Administra tus cuentas bancarias',
+                                cards: 'Gestiona tus tarjetas de crédito',
+                                history: 'Revisa todas tus transacciones',
+                                profile: 'Actualiza tu información personal',
+                                settings: 'Configura tu experiencia'
+                            };
+                            
+                            header.innerHTML = `<h1>${titles[viewId] || viewId}</h1><p>${subtitles[viewId] || ''}</p>`;
+                        }
 
-// ---------- UI helpers ----------
-function showAlert(msg, type='info', timeout=3500){
-  const box = $('alert_placeholder');
-  const id = 'a' + Date.now();
-  const html = `<div id="${id}" class="alert alert-${type} alert-dismissible fade show" role="alert">${msg}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-  </div>`;
-  box.insertAdjacentHTML('beforeend', html);
-  setTimeout(()=>{ const el = document.getElementById(id); if(el) el.classList.remove('show'); }, timeout);
-}
+                        qsa('.sidebar .nav-item').forEach(item => item.classList.remove('active'));
+                        const activeLink = qs(`[data-view="${viewId}"]`);
+                        if (activeLink) {
+                            activeLink.classList.add('active');
+                        }
+                    }
 
-// ---------- Admin actions ----------
-function setTasa(){
-  const v = parseFloat($('input_tasa_manual').value) || state.tasa;
-  state.tasa = +(v.toFixed(2)); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI();
-  showAlert('Tasa actualizada manualmente.', 'success');
-}
-function simSubida(){ state.tasa = +( (state.tasa * 1.02).toFixed(2) ); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI(); showAlert('Tasa subida 2%.', 'info'); }
-function simBaja(){ state.tasa = +( (state.tasa * 0.98).toFixed(2) ); state.tasa_ts = new Date().toLocaleString(); saveState(); updateTasaUI(); showAlert('Tasa bajada 2%.', 'info'); }
+                    switch (viewId) {
+                        case 'dashboard': renderDashboard(); break;
+                        case 'accounts': renderAccounts(); break;
+                        case 'cards': renderCards(); break;
+                        case 'history': renderHistory(); break;
+                        case 'profile': renderProfile(); break;
+                        case 'exchange': renderExchangeForm(); break;
+                    }
+                };
 
-// ---------- Download & clear ----------
-function downloadComprobante(){
-  const text = $('comprobante').textContent;
-  const blob = new Blob([text], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'comprobante_pago.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
-function clearStorageConfirm(){
-  if(confirm('Limpiar historial y datos locales (no usuarios)?')){
-    state.pagos = []; state.historial = []; state.programados = []; state.notifs = [];
-    saveState(); renderHistorial(); renderProgramados(); renderNotifs(); $('comprobante').textContent='Sin operaciones aún.';
-  }
-}
+                const router = () => {
+                    const hash = window.location.hash.substring(1) || '/login';
+                    const route = hash.split('/')[1] || 'login';
 
-// ---------- Show / hide (control de vistas) ----------
-function showLanding(){
-  $('landing_page').style.display='flex';
-  $('auth_container').style.display='none';
-  $('app').style.display='none';
-}
-function showAuth(){
-  $('landing_page').style.display='none';
-  $('auth_container').style.display='block';
-  $('app').style.display='none';
-}
-function showApp(){
-  const session = JSON.parse(localStorage.getItem(KEY_SESSION) || 'null');
-  if(session){
-    $('landing_page').style.display='none';
-    $('auth_container').style.display='none';
-    $('app').style.display='block';
-    $('logged_user').textContent = `Hola, ${session.username}`;
-    // init UI
-    updateTasaUI(); renderAccounts(); renderCards(); renderHistorial(); renderProgramados(); renderNotifs();
-  } else {
-    hideApp();
-  }
-}
-function hideApp(){ showLanding(); }
+                    if (store.isLoggedIn()) {
+                        $('auth-container').style.display = 'none';
+                        $('app-container').style.display = 'flex';
+                        updateAppUI();
+                        showView(route === 'login' ? 'dashboard' : route);
+                    } else {
+                        $('app-container').style.display = 'none';
+                        $('auth-container').style.display = 'flex';
+                        showView(route);
+                    }
+                };
+                
+                // --- APP UI UPDATES ---
+                const updateAppUI = () => {
+                    const user = store.state.user;
+                    if (user) {
+                        const userNameHeader = $('user_name_header');
+                        if (userNameHeader) userNameHeader.innerText = user.name || user.username;
+                        const userAvatar = $('user_avatar');
+                        if (userAvatar) userAvatar.innerText = getInitials(user.name || user.username);
+                        const dropdownUsername = $('dropdown_username');
+                        if (dropdownUsername) dropdownUsername.innerText = user.name || user.username;
+                        const dropdownUseremail = $('dropdown_useremail');
+                        if (dropdownUseremail) dropdownUseremail.innerText = user.email;
+                    }
+                };
 
-// ---------- Initialization & events ----------
-window.addEventListener('load', ()=>{
-  // Cargar estado si existe
-  const saved = loadState();
-  if(saved) state = saved;
+                // --- API SIMULATION ---
+                const api = {
+                    login: async (username, password) => {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        const users = JSON.parse(localStorage.getItem(KEY_USERS) || '[]');
+                        const user = users.find(u => u.username === username && u.password === password);
+                        if (user) {
+                            store.login(user);
+                            return { success: true, message: 'Inicio de sesión exitoso.' };
+                        } else {
+                            return { success: false, message: 'Usuario o contraseña incorrectos.' };
+                        }
+                    },
+                    register: async (username, email, password) => {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        let users = JSON.parse(localStorage.getItem(KEY_USERS) || '[]');
+                        if (users.find(u => u.username === username)) {
+                            return { success: false, message: 'El nombre de usuario ya existe.' };
+                        }
+                        const newUser = { username, email, password, name: '', id: generateId() };
+                        users.push(newUser);
+                        localStorage.setItem(KEY_USERS, JSON.stringify(users));
+                        return { success: true, message: 'Registro exitoso. Ahora puedes iniciar sesión.' };
+                    },
+                    payCreditCard: async (sourceAccountId, cardId, amount) => {
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        
+                        const account = store.state.appData.accounts.find(acc => acc.id === sourceAccountId);
+                        const card = store.state.appData.cards.find(c => c.id === cardId);
+                        const exchangeRate = store.state.appData.exchangeRate.rate;
+                        const amountDOP = amount * exchangeRate;
 
-  ensureDefaultUsers();
+                        if (!account || !card) {
+                            return { success: false, message: 'Cuenta o tarjeta no encontrada.' };
+                        }
 
-  // Siempre iniciar en la landing (aunque haya sesión guardada)
-  showLanding();
+                        if (account.balance < amountDOP) {
+                            return { success: false, message: 'Fondos insuficientes en la cuenta de origen.' };
+                        }
 
-  // Botones landing
-  $('btn_go_login').addEventListener('click', ()=>{
-    const session = JSON.parse(localStorage.getItem(KEY_SESSION) || 'null');
-    if(session){ showApp(); } else { showAuth(); }
-  });
-  $('btn_go_register').addEventListener('click', ()=>{
-    showAuth();
-    $('reg_user').focus();
-  });
+                        if (card.balance < amount) {
+                            return { success: false, message: 'El monto a pagar es mayor al balance de la tarjeta.' };
+                        }
 
-  // Auth events
-  $('btn_login').addEventListener('click', attemptLogin);
-  $('btn_fill_demo').addEventListener('click', fillDemoLogin);
-  $('btn_register').addEventListener('click', registerUser);
-  $('btn_clear_users').addEventListener('click', ()=>{
-    if(confirm('Eliminar todos los usuarios registrados (localStorage)?')){
-      localStorage.removeItem(KEY_USERS); ensureDefaultUsers(); alert('Usuarios reiniciados.');
-    }
-  });
-  $('btn_logout').addEventListener('click', ()=>{ logout(); });
+                        account.balance -= amountDOP;
+                        card.balance -= amount;
 
-  // Payment events
-  $('btn_calcular').addEventListener('click', calcularConversion);
-  $('select_cuenta').addEventListener('change', updateSaldoDisplay);
-  $('btn_pagar').addEventListener('click', simularPago);
-  $('btn_guardar_prog').addEventListener('click', programarPago);
-  $('btn_set_tasa').addEventListener('click', setTasa);
-  $('btn_sim_subida').addEventListener('click', simSubida);
-  $('btn_sim_baja').addEventListener('click', simBaja);
-  $('btn_descargar').addEventListener('click', downloadComprobante);
-  $('btn_limpiar').addEventListener('click', clearStorageConfirm);
+                        const transaction = {
+                            id: generateId(),
+                            date: now(),
+                            description: `Pago a tarjeta ${card.name}`,
+                            amount: amount,
+                            currency: 'USD',
+                            amountDOP: amountDOP,
+                            exchangeRate: exchangeRate,
+                            sourceAccount: account.name
+                        };
 
-  // Guardar al salir
-  window.addEventListener('beforeunload', saveState);
-});
+                        store.addTransaction(transaction);
+                        store.save();
 
-// expose saveState para debugging en consola
-window.saveSimState = saveState;
-</script>
+                        return { success: true, message: 'Pago realizado con éxito.' };
+                    }
+                };
+                
+                // --- EXCHANGE LOGIC ---
+                const updateExchangeSummary = () => {
+                    const montoInput = $('ex_monto_usd');
+                    const accountSelect = $('ex_select_account');
+                    const cardSelect = $('ex_select_card');
+                    const summary = $('ex_summary');
+                    const confirmFooter = $('ex_confirm_footer');
 
+                    if (!montoInput || !accountSelect || !cardSelect || !summary || !confirmFooter) return;
+
+                    const amountUSD = parseFloat(montoInput.value) || 0;
+                    const exchangeRate = store.state.appData.exchangeRate.rate;
+                    const account = store.state.appData.accounts.find(acc => acc.id === accountSelect.value);
+                    const card = store.state.appData.cards.find(c => c.id === cardSelect.value);
+                    const amountDOP = amountUSD * exchangeRate;
+
+                    if (amountUSD > 0 && account && card) {
+                        const canPay = account.balance >= amountDOP && card.balance >= amountUSD;
+                        
+                        summary.innerHTML = `
+                            <p><strong>Monto a pagar (USD):</strong> ${money(amountUSD, 'USD')}</p>
+                            <p><strong>Tasa de cambio:</strong> 1 USD = ${money(exchangeRate, 'DOP')} DOP</p>
+                            <p><strong>Costo total (DOP):</strong> ${money(amountDOP, 'DOP')}</p>
+                            <hr>
+                            <p class="small-muted">Balance en cuenta: ${money(account.balance, 'DOP')}</p>
+                            <p class="small-muted">Balance de tarjeta: ${money(card.balance, 'USD')}</p>
+                            ${!canPay ? '<p class="text-danger small">Fondos insuficientes o monto mayor al balance de la tarjeta</p>' : ''}
+                        `;
+                        
+                        confirmFooter.style.display = canPay ? 'block' : 'none';
+
+                        if (canPay) {
+                            store.state.currentTransaction = {
+                                sourceAccountId: account.id,
+                                cardId: card.id,
+                                amount: amountUSD
+                            };
+                        } else {
+                            store.state.currentTransaction = null;
+                        }
+
+                    } else {
+                        summary.innerHTML = '<p class="small-muted">Completa el formulario para ver el resumen.</p>';
+                        confirmFooter.style.display = 'none';
+                        store.state.currentTransaction = null;
+                    }
+                };
+
+                const bindEvents = () => {
+                    // Login form
+                    const loginForm = $('login_form');
+                    if (loginForm) {
+                        loginForm.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const username = $('login_username').value;
+                            const password = $('login_password').value;
+
+                            showLoader();
+                            const result = await api.login(username, password);
+                            hideLoader();
+
+                            if (result.success) {
+                                window.location.hash = '#/dashboard';
+                            } else {
+                                showAlert('login_alert_box', result.message, 'danger');
+                            }
+                        });
+                    }
+
+                    // Fill admin credentials
+                    const fillAdminBtn = $('action_fill_admin');
+                    if (fillAdminBtn) {
+                        fillAdminBtn.addEventListener('click', () => {
+                            $('login_username').value = 'admin';
+                            $('login_password').value = 'password123';
+                        });
+                    }
+                    
+                    // Register form
+                    const registerForm = $('register_form');
+                    if (registerForm) {
+                        registerForm.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const username = $('reg_username').value;
+                            const email = $('reg_email').value;
+                            const password = $('reg_password').value;
+                            const password2 = $('reg_password2').value;
+                            
+                            if (password !== password2) {
+                                showAlert('register_alert_box', 'Las contraseñas no coinciden.', 'danger');
+                                return;
+                            }
+                            
+                            showLoader();
+                            const result = await api.register(username, email, password);
+                            hideLoader();
+                            
+                            if (result.success) {
+                                showAlert('register_alert_box', result.message, 'success');
+                                registerForm.reset();
+                            } else {
+                                showAlert('register_alert_box', result.message, 'danger');
+                            }
+                        });
+                    }
+
+                    // Logout buttons
+                    const logoutBtn = $('action_logout');
+                    const logoutDropdown = $('action_logout_dropdown');
+                    
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            store.logout();
+                            window.location.hash = '#/login';
+                        });
+                    }
+
+                    if (logoutDropdown) {
+                        logoutDropdown.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            store.logout();
+                            window.location.hash = '#/login';
+                        });
+                    }
+
+                    // History clear button
+                    const historyClearBtn = $('history_clear_btn');
+                    if (historyClearBtn) {
+                        historyClearBtn.addEventListener('click', () => {
+                             if (confirm('¿Estás seguro que deseas borrar todo el historial de transacciones?')) {
+                                 store.state.appData.history = [];
+                                 store.save();
+                                 renderHistory();
+                             }
+                        });
+                    }
+                    
+                    // Pagination
+                    const paginationPrev = $('pagination_prev');
+                    const paginationNext = $('pagination_next');
+                    
+                    if (paginationPrev) {
+                        paginationPrev.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            if (store.state.historyPage > 0) {
+                                store.state.historyPage--;
+                                renderHistory();
+                            }
+                        });
+                    }
+
+                    if (paginationNext) {
+                        paginationNext.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const totalPages = Math.ceil(store.state.appData.history.length / HISTORY_PAGE_SIZE);
+                            if (store.state.historyPage < totalPages - 1) {
+                                store.state.historyPage++;
+                                renderHistory();
+                            }
+                        });
+                    }
+                    
+                    // Profile form
+                    const profileForm = $('profile_form');
+                    if (profileForm) {
+                        profileForm.addEventListener('submit', (e) => {
+                            e.preventDefault();
+                            const user = store.state.user;
+                            if (user) {
+                                user.name = $('profile_fullname').value;
+                                user.email = $('profile_email').value;
+                                localStorage.setItem(KEY_USERS, JSON.stringify(
+                                    JSON.parse(localStorage.getItem(KEY_USERS)).map(u => u.id === user.id ? user : u)
+                                ));
+                                localStorage.setItem(KEY_SESSION, JSON.stringify(user));
+                                showAlert('profile_alert_box', 'Perfil actualizado con éxito.', 'success');
+                                updateAppUI();
+                            }
+                        });
+                    }
+
+                    // Exchange form events
+                    const montoInput = $('ex_monto_usd');
+                    const accountSelect = $('ex_select_account');
+                    const cardSelect = $('ex_select_card');
+                    const payBtn = $('ex_pay_btn');
+
+                    if (montoInput) {
+                        montoInput.addEventListener('input', updateExchangeSummary);
+                    }
+                    if (accountSelect) {
+                        accountSelect.addEventListener('change', updateExchangeSummary);
+                    }
+                    if (cardSelect) {
+                        cardSelect.addEventListener('change', updateExchangeSummary);
+                    }
+
+                    if (payBtn) {
+                        payBtn.addEventListener('click', async () => {
+                            const tx = store.state.currentTransaction;
+                            if (!tx) {
+                                showAlert('exchange_alert_box', 'Error: No hay datos de transacción para procesar.', 'danger');
+                                return;
+                            }
+
+                            if (confirm('¿Confirma que desea realizar este pago?')) {
+                                showLoader();
+                                const result = await api.payCreditCard(tx.sourceAccountId, tx.cardId, tx.amount);
+                                hideLoader();
+
+                                if (result.success) {
+                                    showAlert('exchange_alert_box', result.message, 'success');
+                                    renderDashboard();
+                                    renderAccounts();
+                                    renderCards();
+                                    renderHistory();
+                                    renderExchangeForm();
+                                    store.state.currentTransaction = null;
+                                } else {
+                                    showAlert('exchange_alert_box', result.message, 'danger');
+                                }
+                            }
+                        });
+                    }
+                };
+                
+                // --- INITIALIZATION ---
+                store.init();
+                bindEvents();
+                
+                // Hide loader immediately when page loads
+                hideLoader();
+                
+                // Router
+                router();
+                window.addEventListener('hashchange', router);
+
+                // Set current year
+                const currentYear = new Date().getFullYear();
+                const year1 = $('year1');
+                const year2 = $('year2');
+                if (year1) year1.innerText = currentYear;
+                if (year2) year2.innerText = currentYear;
+            });
+            </script>
 </body>
 </html>
+
